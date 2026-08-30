@@ -122,7 +122,7 @@ class PytestRun:
             " ".join(quote(path) for path in self.paths),
             "-q" if self.quiet else "",
             self._coverage_flags(),
-            f"-k {quote(self.k)}" if self.k else "",
+            quote(f"-k={self.k}") if self.k else "",
             "-m 'not slow and not network'" if self.fast else "",
             "-p no:randomly" if self.no_random else "",
         )

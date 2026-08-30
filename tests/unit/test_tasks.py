@@ -53,7 +53,7 @@ def test_test_tasks_scope_dynamically(
     testing.properties(ctx, profile="ci")
     assert "spec/pkg" in ctx.commands[0]
     assert "--cov=pkg" in ctx.commands[0]
-    assert "-k domain" in ctx.commands[0]
+    assert "-k=domain" in ctx.commands[0]
     assert ctx.commands[1].startswith("HYPOTHESIS_PROFILE=ci ")
     assert "spec/pkg/properties" in ctx.commands[1]
 
