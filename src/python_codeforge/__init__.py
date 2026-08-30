@@ -1,0 +1,30 @@
+"""Reusable Invoke tasks for strict, uv-managed Python projects."""
+
+from __future__ import annotations
+
+from python_codeforge import gates
+from python_codeforge._invoke import build_namespace, task
+from python_codeforge.collections import env, hooks, quality, security, testing
+from python_codeforge.commands import PytestRun, SemgrepConfig, Targets
+from python_codeforge.config import Settings
+
+ns = build_namespace(
+    root=[gates.check, gates.ci],
+    collections={
+        "env": env,
+        "hooks": hooks,
+        "quality": quality,
+        "test": testing,
+        "security": security,
+    },
+)
+
+__all__ = [
+    "PytestRun",
+    "SemgrepConfig",
+    "Settings",
+    "Targets",
+    "build_namespace",
+    "ns",
+    "task",
+]

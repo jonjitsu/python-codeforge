@@ -1,0 +1,166 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "python-codeforge"
+version = "0.1.0"
+description = "Reusable Invoke tasks for strict Python projects managed with uv."
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Jonathan Willis" }]
+classifiers = [
+  "Private :: Do Not Upload",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+dependencies = [
+  "bandit[toml]>=1.8",
+  "complexipy>=7.0",
+  "hypothesis>=6.125",
+  "invoke>=2.2",
+  "mypy>=1.14",
+  "pip-audit>=2.7",
+  "pyright>=1.1.392",
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "pytest-randomly>=3.16",
+  "pyyaml>=6.0",
+  "radon>=6.0",
+  "ruff>=0.9",
+  "semgrep>=1.104",
+  "vulture>=2.14",
+]
+
+[dependency-groups]
+dev = ["types-pyyaml>=6.0"]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/python_codeforge"]
+
+[tool.hatch.build]
+exclude = [
+  ".venv*",
+  ".coverage*",
+  ".hypothesis",
+  ".mypy_cache",
+  ".pytest_cache",
+  ".ruff_cache",
+  "build",
+  "dist",
+]
+
+[tool.ruff]
+src = ["src", "tests"]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["COM812", "ISC001", "D203", "D213", "CPY001"]
+flake8-annotations = { mypy-init-return = true, suppress-none-returning = false }
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+  "S101",
+  "PLR2004",
+  "D",
+  "INP001",
+  "ANN401",
+  "PLR0913",
+  "PLR0917",
+  "FBT001",
+]
+"src/python_codeforge/**" = ["FBT001", "FBT002", "ANN401", "T201"]
+"vulture_whitelist.py" = ["B018"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["python_codeforge"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.13"
+files = ["src", "tests", "tasks.py", "vulture_whitelist.py"]
+mypy_path = ["src", "."]
+explicit_package_bases = true
+namespace_packages = true
+strict = true
+warn_unreachable = true
+warn_no_return = true
+disallow_any_explicit = false
+disallow_any_generics = true
+enable_error_code = [
+  "redundant-expr",
+  "possibly-undefined",
+  "truthy-bool",
+  "ignore-without-code",
+  "unused-awaitable",
+  "explicit-override",
+]
+
+[[tool.mypy.overrides]]
+module = ["radon.*"]
+ignore_missing_imports = true
+
+[tool.pyright]
+include = ["src", "tests", "vulture_whitelist.py"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = "warning"
+reportPrivateUsage = "error"
+reportUnnecessaryTypeIgnoreComment = "error"
+
+[[tool.pyright.executionEnvironments]]
+root = "."
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config", "-ra", "--import-mode=importlib"]
+markers = [
+  "slow: long-running tests",
+  "network: requires network access",
+]
+filterwarnings = ["error"]
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["src/python_codeforge"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
+
+[tool.coverage.json]
+output = ".coverage.json"
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "build", "dist"]
+
+[tool.vulture]
+paths = ["src", "tests", "tasks.py", "vulture_whitelist.py"]
+exclude = [".venv"]
+ignore_names = ["side_effect", "_"]
+min_confidence = 80
+sort_by_size = true
+
+[tool.python-codeforge]
+packages = ["python_codeforge"]
+targets = ["src", "tests", "tasks.py", "vulture_whitelist.py"]
+
+[tool.python-codeforge.quality]
+crap_limit = 10.0
+max_complexity = 10
+mi_floor = 40.0
+cognitive_limit = 9
+
+[tool.python-codeforge.quality.coverage]
+python_codeforge = 90.0

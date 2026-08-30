@@ -1,0 +1,12 @@
+.venv*/
+.coverage
+.coverage.json
+.audit-requirements.txt
+.hypothesis/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+htmlcov/
+__pycache__/
