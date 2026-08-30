@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shlex
 
-from hypothesis import given
+from hypothesis import example, given
 from hypothesis import strategies as st
 
 from python_codeforge.commands import PytestRun, SemgrepConfig, Targets, semgrep
@@ -23,6 +23,14 @@ def test_targets_survive_a_shell_round_trip(values: list[str]) -> None:
     no_random=st.booleans(),
     run_paths=st.lists(paths, max_size=3),
 )
+@example(
+    k="--cov",
+    fast=False,
+    cov=False,
+    quiet=False,
+    no_random=False,
+    run_paths=[],
+)
 def test_pytest_command_is_always_parseable(
     k: str,
     fast: bool,
@@ -40,8 +48,12 @@ def test_pytest_command_is_always_parseable(
         paths=tuple(run_paths),
     ).command()
     tokens = shlex.split(command)
+    coverage_flags = [
+        argument for argument in tokens if argument == "--cov" or argument.startswith("--cov=")
+    ]
     assert tokens[:3] == ["uv", "run", "pytest"]
-    assert ("--cov" in command) == cov
+    assert bool(coverage_flags) == cov
+    assert (f"-k={k}" in tokens) == bool(k)
     assert ("-q" in tokens) == quiet
     assert ("-p" in tokens) == no_random
     assert all(path in tokens for path in run_paths)

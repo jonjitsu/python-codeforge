@@ -49,7 +49,7 @@ def test_pytest_flags_are_composable_and_quoted() -> None:
     assert tokens[:3] == ["uv", "run", "pytest"]
     assert "spec/a dir" in tokens
     assert "--cov=pkg" in tokens
-    assert "not slow" in tokens
+    assert "-k=not slow" in tokens
     assert "not slow and not network" in tokens
 
 
