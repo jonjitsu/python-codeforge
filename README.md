@@ -3,7 +3,7 @@
 Reusable, typed [Invoke](https://www.pyinvoke.org/) tasks for Python projects managed with
 `uv`. The package provides formatting, linting, strict type checking, dead-code detection,
 tests, per-package coverage, CRAP, maintainability, cognitive complexity, hygiene, security,
-environment, and managed pre-commit-hook tasks.
+environment, managed pre-commit-hook tasks, and portable agent configuration.
 
 ## Use it in another project
 
@@ -136,7 +136,23 @@ invoke test.run --package acme
 invoke test.properties
 invoke security.all
 invoke hooks.install
+invoke ai.install-config
 ```
+
+### Install agent configuration
+
+Install the packaged instructions and skills into the consuming repository:
+
+```bash
+uv run invoke ai.install-config
+```
+
+The task copies `AGENTS.md` and `.agents/skills` as the canonical configuration, then creates
+`CLAUDE.md -> AGENTS.md` and `.claude/skills -> ../.agents/skills`. Re-running it is idempotent.
+It preserves unrelated skills and refuses to overwrite differing files or provider paths; inspect
+conflicts and pass `--force` only when replacement is intended. Real directories are never removed.
+The distributable payload is maintained under `data/agent-config`; the root `.agents` directory
+contains repository-local skills and is not packaged for consumers.
 
 The package intentionally carries the complete quality toolchain as dependencies. Add it to a
 development group, not to an application's runtime dependencies. It assumes `uv`, a `src/`

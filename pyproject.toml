@@ -42,6 +42,9 @@ default-groups = ["dev"]
 [tool.hatch.build.targets.wheel]
 packages = ["src/python_codeforge"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"data/agent-config" = "python_codeforge/_agent_config"
+
 [tool.hatch.build]
 exclude = [
   ".venv*",

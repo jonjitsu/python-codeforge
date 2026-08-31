@@ -6,11 +6,27 @@ import pytest
 from invoke.runners import Result
 
 from python_codeforge._invoke import Exit
-from python_codeforge.collections import env, quality, security, testing
+from python_codeforge.collections import ai, env, quality, security, testing
 from python_codeforge.recording import RecordingContext
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from tests.unit.conftest import Project
+
+
+def test_ai_install_config_task_uses_consumer_root(
+    ctx: RecordingContext,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    ai.install_config(ctx)
+
+    assert (tmp_path / "AGENTS.md").is_file()
+    assert "2 link(s) created" in capsys.readouterr().out
 
 
 def test_environment_tasks_use_consumer_config(
