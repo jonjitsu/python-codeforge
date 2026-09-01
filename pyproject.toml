@@ -7,12 +7,12 @@ name = "python-codeforge"
 version = "0.1.0"
 description = "Reusable Invoke tasks for strict Python projects managed with uv."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 license = { text = "Proprietary" }
 authors = [{ name = "Jonathan Willis" }]
 classifiers = [
   "Private :: Do Not Upload",
-  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.12",
   "Typing :: Typed",
 ]
 dependencies = [
@@ -60,7 +60,7 @@ exclude = [
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 100
-target-version = "py313"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -88,7 +88,7 @@ known-first-party = ["python_codeforge"]
 convention = "google"
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.12"
 files = ["src", "tests", "tasks.py", "vulture_whitelist.py"]
 mypy_path = ["src", "."]
 explicit_package_bases = true
@@ -113,7 +113,7 @@ ignore_missing_imports = true
 
 [tool.pyright]
 include = ["src", "tests", "vulture_whitelist.py"]
-pythonVersion = "3.13"
+pythonVersion = "3.12"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = "warning"
 reportPrivateUsage = "error"
