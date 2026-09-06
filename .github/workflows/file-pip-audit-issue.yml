@@ -18,18 +18,16 @@ jobs:
         run: |
           set -euo pipefail
           title='security.audit: export python-codeforge with a pip-audit hashable requirement'
-          if gh issue list --state all --search "$title" --json title --jq '.[].title' | grep -Fxq "$title"; then
-            echo "Issue already exists"
-            gh issue list --state all --search "$title" --limit 1
+          existing="$(gh api "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" --jq ".[] | select(.title == \"${title}\") | .html_url")"
+          if [ -n "$existing" ]; then
+            echo "Issue already exists: $existing"
             exit 0
           fi
-          gh issue create \
-            --title "$title" \
-            --body "$(cat <<'EOF'
-          `security.audit` runs `uv export` then `pip-audit --strict`. When Codeforge is a git dependency of the consuming project, the export is a bare VCS URL and `pip-audit --strict` fails (pip cannot hash VCS installs).
+          gh api "repos/${GITHUB_REPOSITORY}/issues" \
+            -f title="$title" \
+            -f body='`security.audit` runs `uv export` then `pip-audit --strict`. When Codeforge is a git dependency of the consuming project, the export is a bare VCS URL and `pip-audit --strict` fails (pip cannot hash VCS installs).
 
           Downstream Lab3 overrides `security.audit` with `--no-emit-package python-codeforge` (trading/lab3#46).
 
-          **Fix:** export a hashable `python-codeforge` line and demonstrate `pip-audit --strict` passes against an export that includes it.
-          EOF
-          )"
+          **Fix:** export a hashable `python-codeforge` line and demonstrate `pip-audit --strict` passes against an export that includes it.' \
+            --jq '.html_url'
