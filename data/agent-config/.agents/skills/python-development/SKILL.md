@@ -85,7 +85,7 @@ a bare `invoke` works; prefer `uv run invoke …` when the venv may be stale.
 
 ## Style
 
-- **`from __future__ import annotations`: deliberate, not reflexive.** On 3.13,
+- **`from __future__ import annotations`: deliberate, not reflexive.** On 3.12+,
   `list[str]` and `X | Y` already work in annotations without it, so the
   remaining reasons are narrow — unquoted forward references, and importing
   types under `if TYPE_CHECKING:` to break a cycle or cut import cost. Add it to

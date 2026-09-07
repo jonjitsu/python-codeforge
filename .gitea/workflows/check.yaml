@@ -1,9 +1,10 @@
-name: CI
+name: check
 
+# Pull requests gate branch work; pushes gate master after a merge. Keeping the
+# workflow under .gitea prevents the public release mirror from running CI.
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
@@ -11,12 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: check-${{ gitea.workflow }}-${{ gitea.ref }}
   cancel-in-progress: true
 
 jobs:
   quality:
-    name: Python 3.13 quality gates
+    name: Python 3.12 quality gates
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -30,7 +31,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           version: "0.11.21"
-          python-version: "3.13"
+          python-version: "3.12"
           enable-cache: true
 
       - name: Install dependencies

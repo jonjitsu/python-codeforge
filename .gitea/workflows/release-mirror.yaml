@@ -1,0 +1,100 @@
+name: release-mirror
+
+# Mirroring is separate from canonical tagging. A GitHub outage can therefore
+# be retried without retagging or changing the Gitea release.
+on:
+  push:
+    tags: ["*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: An existing tag to mirror
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  # Gitea reserves GITHUB_ names for its own context variables.
+  MIRROR: github.com/jonjitsu/python-codeforge.git
+  MIRROR_REPOSITORY: jonjitsu/python-codeforge
+
+jobs:
+  mirror:
+    name: Mirror the release to GitHub
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve the tag
+        id: release
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.tag || github.ref_name }}"
+          if ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "no such tag: $tag" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the tagged release
+        run: git checkout --detach "${{ steps.release.outputs.tag }}"
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.21"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Push the release to GitHub
+        env:
+          TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git remote add mirror "https://x-access-token:$TOKEN@$MIRROR"
+          git push mirror "refs/tags/$TAG"
+          git push mirror "$TAG^{commit}:refs/heads/master"
+
+      - name: Create or update the GitHub release
+        env:
+          TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          notes="$(uv run invoke release-notes)"
+          if [ -z "$notes" ]; then
+            echo "no changelog section for $TAG" >&2
+            exit 1
+          fi
+          api="https://api.github.com/repos/$MIRROR_REPOSITORY"
+          release_id="$(curl -sf \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$api/releases/tags/$TAG" | jq -r '.id // empty' || true)"
+          payload="$(jq -n --arg t "$TAG" --arg b "$notes" \
+            '{tag_name:$t, name:("python-codeforge " + $t), body:$b}')"
+          if [ -n "$release_id" ]; then
+            curl -sf -X PATCH \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -H "Content-Type: application/json" -d "$payload" \
+              "$api/releases/$release_id" > /dev/null
+            echo "updated python-codeforge $TAG on GitHub"
+          else
+            curl -sf -X POST \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -H "Content-Type: application/json" -d "$payload" \
+              "$api/releases" > /dev/null
+            echo "published python-codeforge $TAG on GitHub"
+          fi

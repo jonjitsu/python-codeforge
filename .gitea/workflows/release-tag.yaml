@@ -1,0 +1,99 @@
+name: release-tag
+
+# The version is read from the merged release tree, so the commit that passed
+# review and CI is exactly the commit tagged on the canonical Gitea repository.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Tag the merged release
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged && github.event.pull_request.head.ref == 'release/next'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.21"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Read the released version
+        id: released
+        run: |
+          set -euo pipefail
+          version="$(uv run invoke release-version)"
+          if [ -z "$version" ]; then
+            echo "could not read the released version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate any existing tag
+        id: tag
+        env:
+          VERSION: ${{ steps.released.outputs.version }}
+        run: |
+          set -euo pipefail
+          if ! git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          tagged="$(git rev-parse "$VERSION^{commit}")"
+          head="$(git rev-parse HEAD)"
+          if [ "$tagged" != "$head" ]; then
+            echo "$VERSION already points to $tagged, not $head" >&2
+            exit 1
+          fi
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+          echo "$VERSION already tags this commit; continuing the release"
+
+      - name: Tag the release
+        if: steps.tag.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.released.outputs.version }}
+        run: |
+          git config user.name "python-codeforge release"
+          git config user.email "noreply@gitea.home.arpa"
+          git tag -a "$VERSION" -m "python-codeforge $VERSION"
+          git push origin "$VERSION"
+
+      - name: Create or update the Gitea release
+        env:
+          GITEA_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ steps.released.outputs.version }}
+          REPO: ${{ github.repository }}
+          API: ${{ github.server_url }}/api/v1
+        run: |
+          set -euo pipefail
+          notes="$(uv run invoke release-notes)"
+          release_id="$(curl -sf -H "Authorization: token $GITEA_TOKEN" \
+            "$API/repos/$REPO/releases/tags/$VERSION" | jq -r '.id // empty' || true)"
+          if [ -n "$release_id" ]; then
+            payload="$(jq -n --arg t "$VERSION" --arg b "$notes" \
+              '{name:("python-codeforge " + $t), body:$b}')"
+            curl -sf -X PATCH -H "Authorization: token $GITEA_TOKEN" \
+              -H "Content-Type: application/json" -d "$payload" \
+              "$API/repos/$REPO/releases/$release_id" > /dev/null
+            echo "updated $VERSION on Gitea"
+          else
+            payload="$(jq -n --arg t "$VERSION" --arg b "$notes" \
+              '{tag_name:$t, name:("python-codeforge " + $t), body:$b}')"
+            curl -sf -X POST -H "Authorization: token $GITEA_TOKEN" \
+              -H "Content-Type: application/json" -d "$payload" \
+              "$API/repos/$REPO/releases" > /dev/null
+            echo "published $VERSION on Gitea"
+          fi

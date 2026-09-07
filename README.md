@@ -7,11 +7,10 @@ environment, managed pre-commit-hook tasks, and portable agent configuration.
 
 ## Use it in another project
 
-Add this project as a development dependency (use its eventual Git URL after moving this
-directory into its own repository):
+Add a released version from the public GitHub release mirror as a development dependency:
 
 ```bash
-uv add --group dev "python-codeforge @ git+ssh://git@example/python-codeforge.git"
+uv add --group dev "python-codeforge @ git+https://github.com/jonjitsu/python-codeforge@1.0.0"
 ```
 
 Create `tasks.py` in the consuming project:
@@ -165,8 +164,15 @@ because its native executable is not portable to every development environment. 
 
 ## Develop this project
 
+Development happens in the canonical Gitea repository. GitHub contains released commits and
+release notes only; report issues and open pull requests in Gitea.
+
 ```bash
 uv sync --all-groups
 uv run invoke check
 uv run invoke ci
 ```
+
+Every change uses a Conventional Commit subject and adds a hand-written entry beneath
+`## Unreleased` in `CHANGELOG.md`. Merging the standing `release/next` pull request creates the
+Gitea release and mirrors the tagged commit to GitHub.

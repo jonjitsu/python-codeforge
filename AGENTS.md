@@ -10,3 +10,20 @@ The root `.agents/skills` directory configures work on this repository only. It 
 of the agent configuration distributed to consumers. Keep installable payload files under
 `data/agent-config`; packaging and `ai.install-config` must read from that directory, never from
 the repository-local `.agents` directory.
+
+## Commits and releasing
+
+Gitea is the canonical development forge. GitHub is a release-only mirror; open issues and pull
+requests in Gitea and push development branches only to `origin`.
+
+Release automation derives the semantic-version bump from Conventional Commits. Use
+`type(scope): subject` with one of `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`,
+`refactor`, `revert`, `style`, or `test`. A `feat` is a minor bump, `type!` or a
+`BREAKING CHANGE:` trailer is a major bump, and every other change is a patch. The pipeline alone
+writes `release:` commits.
+
+Add a hand-written entry beneath `## Unreleased` in `CHANGELOG.md` for every user-visible or
+operational change. Never edit a release version by hand: `pyproject.toml` is authoritative and
+the release workflow updates it, `uv.lock`, and the changelog together. Merging the standing
+`release/next` pull request creates the canonical Gitea tag and release, then mirrors that exact
+tagged commit and its notes to GitHub.
