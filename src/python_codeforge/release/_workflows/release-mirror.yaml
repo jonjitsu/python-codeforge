@@ -80,6 +80,18 @@ jobs:
             exit 1
           fi
 
+      - name: Build the release wheel
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          uv build --wheel
+          wheel="dist/__WHEEL_PACKAGE__-${TAG}-py3-none-any.whl"
+          if [ ! -f "$wheel" ]; then
+            echo "missing wheel: $wheel" >&2
+            exit 1
+          fi
+
       - name: Push the release to GitHub
         env:
           TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}
@@ -126,3 +138,33 @@ jobs:
               "$api/releases" > /dev/null
             echo "published __PROJECT_NAME__ $TAG on GitHub"
           fi
+
+      - name: Publish the release wheel to GitHub
+        env:
+          TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          wheel="dist/__WHEEL_PACKAGE__-${TAG}-py3-none-any.whl"
+          asset_name="$(basename "$wheel")"
+          api="https://api.github.com/repos/$MIRROR_REPOSITORY"
+          release_json="$(curl -sf \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$api/releases/tags/$TAG")"
+          upload_url="$(echo "$release_json" | jq -r '.upload_url' | sed 's/{?name,label}//')"
+          existing_id="$(echo "$release_json" | jq -r --arg n "$asset_name" \
+            '.assets[]? | select(.name == $n) | .id' | head -1)"
+          if [ -n "$existing_id" ]; then
+            echo "$asset_name already published for $TAG"
+            exit 0
+          fi
+          curl -sf -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$wheel" \
+            "$upload_url?name=$asset_name" > /dev/null
+          echo "published $asset_name to GitHub release $TAG"

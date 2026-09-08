@@ -76,6 +76,7 @@ def render(template: str, settings: WorkflowSettings) -> str:
         "__PROJECT_NAME__": settings.project_name,
         "__GITHUB_REPOSITORY__": settings.github_repository,
         "__PYTHON_VERSION__": settings.python_version,
+        "__WHEEL_PACKAGE__": re.sub(r"[-_.]+", "_", settings.project_name).lower(),
     }
     rendered = template
     for marker, value in replacements.items():

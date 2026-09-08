@@ -72,6 +72,26 @@ def test_mirror_accepts_only_canonical_releases_without_script_interpolation() -
     )
 
 
+def test_mirror_builds_and_publishes_the_release_wheel() -> None:
+    """The GitHub mirror attaches an immutable wheel built from the tagged commit."""
+    mirror = (release_workflows.bundled_root() / "release-mirror.yaml").read_text(encoding="utf-8")
+
+    assert "Build the release wheel" in mirror
+    assert "uv build --wheel" in mirror
+    assert "Publish the release wheel to GitHub" in mirror
+    assert "dist/__WHEEL_PACKAGE__-${TAG}-py3-none-any.whl" in mirror
+    assert mirror.index("Verify the tag matches the project release") < mirror.index(
+        "Build the release wheel"
+    )
+    assert mirror.index("Create or update the GitHub release") < mirror.index(
+        "Publish the release wheel to GitHub"
+    )
+    publish = mirror.split("- name: Publish the release wheel to GitHub", 1)[1].split(
+        "- name:", 1
+    )[0]
+    assert "already published for $TAG" in publish
+
+
 def test_gitea_workflows_do_not_claim_unsupported_permission_scoping() -> None:
     """Templates must not imply that Gitea enforces GitHub permission blocks."""
     for name in release_workflows.EXPECTED_WORKFLOWS:

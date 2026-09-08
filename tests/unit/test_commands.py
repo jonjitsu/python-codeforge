@@ -73,7 +73,8 @@ def test_security_commands_include_expected_safety_flags() -> None:
     assert container.startswith("podman run --rm ")
     assert commands.SEMGREP_IMAGE in container
     assert "--no-emit-project" in commands.export_requirements("audit.txt")
-    assert commands.pip_audit("audit.txt").endswith("-r audit.txt")
+    audit = commands.pip_audit("audit.txt")
+    assert audit == "uv run pip-audit -s osv --strict --progress-spinner=off -r audit.txt"
 
 
 def test_namespace_exposes_root_and_subcollection_tasks() -> None:

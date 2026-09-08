@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Each GitHub release now includes an immutable `python_codeforge-<version>-py3-none-any.whl`
+  asset built from the tagged commit, so consumers can depend on a hashed release-wheel URL
+  instead of a Git dependency.
+- `security.audit` now uses the OSV vulnerability service so `pip-audit --strict` can audit
+  exports that include hashed release-wheel dependencies.
 - The README now opens with a quick start and documents the safety properties of the
   installed release workflows.
 - Added reusable semantic-version release tasks and installable Gitea workflow

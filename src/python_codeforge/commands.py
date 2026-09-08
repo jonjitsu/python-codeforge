@@ -181,4 +181,12 @@ def export_requirements(output: str) -> str:
 
 def pip_audit(requirements: str) -> str:
     """Build a pip-audit command for an exported requirements file."""
-    return _uv("pip-audit", "--strict", "--progress-spinner=off", "-r", quote(requirements))
+    return _uv(
+        "pip-audit",
+        "-s",
+        "osv",
+        "--strict",
+        "--progress-spinner=off",
+        "-r",
+        quote(requirements),
+    )

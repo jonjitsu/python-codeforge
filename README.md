@@ -9,11 +9,20 @@ environment, managed pre-commit-hook tasks, and portable agent configuration.
 
 Add Codeforge to an existing `uv` project and get a green gate in four steps.
 
-1. Install it as a development dependency:
+1. Install it as a development dependency from the matching GitHub release wheel:
 
-   ```bash
-   uv add --group dev "python-codeforge @ git+https://github.com/jonjitsu/python-codeforge@1.0.0"
+   ```toml
+   [dependency-groups]
+   dev = ["python-codeforge"]
+
+   [tool.uv.sources]
+   python-codeforge = { url = "https://github.com/jonjitsu/python-codeforge/releases/download/1.0.0/python_codeforge-1.0.0-py3-none-any.whl" }
    ```
+
+   Then run `uv lock`. Each released version publishes
+   `python_codeforge-<version>-py3-none-any.whl` on GitHub; substitute the version in the
+   URL. A Git dependency remains possible for unreleased commits, but the release wheel is the
+   normal path for consuming projects that need hash-checked exports and `pip-audit --strict`.
 
 2. Create `tasks.py` at the repository root:
 
@@ -47,8 +56,8 @@ release mechanism in detail.
 ## Use it in another project
 
 The [quick start](#quick-start) covers installation and the minimal `tasks.py`; released versions
-come from the public GitHub release mirror. The rest of this section explains why that file is
-needed, how to add project-specific tasks, and which settings Codeforge reads.
+publish an immutable wheel on the public GitHub release mirror. The rest of this section explains
+why that file is needed, how to add project-specific tasks, and which settings Codeforge reads.
 
 ### How Invoke discovers the tasks
 
@@ -170,7 +179,7 @@ invoke release.install
 
 Codeforge can install the release mechanism used by this project into another repository. Gitea
 remains the development forge and owns pull requests, CI, tags, and the canonical release. GitHub
-receives only the exact tagged commit and matching release notes.
+receives only the exact tagged commit, matching release notes, and the built wheel asset.
 
 Configure the public mirror and the Python version used by Actions:
 
@@ -201,9 +210,10 @@ merged branches.
 Every merged change must use a Conventional Commit subject and add hand-written notes under
 `## Unreleased`. A merge to `master` refreshes a standing `release/next` pull request. Merging that
 pull request pins its exact merge commit, creates the Gitea tag and release, and only then dispatches
-the GitHub mirror. The mirror rejects tags without a matching canonical Gitea release. Nothing
-re-drives a failed mirror: the Gitea release stays canonical, and the retry is to run the
-`release-mirror` workflow by hand with the released tag. The tasks
+the GitHub mirror. The mirror rejects tags without a matching canonical Gitea release, builds the
+wheel from the tagged tree, and attaches `python_codeforge-<version>-py3-none-any.whl` to the
+GitHub release. Nothing re-drives a failed mirror: the Gitea release stays canonical, and the retry
+is to run the `release-mirror` workflow by hand with the released tag. The tasks
 `release.prepare`, `release.version`, and `release.notes` are also available for local inspection.
 
 The installed workflows are written to fail loudly rather than release the wrong thing:
