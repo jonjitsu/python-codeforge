@@ -18,8 +18,8 @@ concurrency:
 
 env:
   # Gitea reserves GITHUB_ names for its own context variables.
-  MIRROR: github.com/jonjitsu/python-codeforge.git
-  MIRROR_REPOSITORY: jonjitsu/python-codeforge
+  MIRROR: github.com/__GITHUB_REPOSITORY__.git
+  MIRROR_REPOSITORY: __GITHUB_REPOSITORY__
 
 jobs:
   mirror:
@@ -63,7 +63,7 @@ jobs:
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           version: "0.11.21"
-          python-version: "3.12"
+          python-version: "__PYTHON_VERSION__"
           enable-cache: true
 
       - name: Install dependencies
@@ -108,7 +108,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "$api/releases/tags/$TAG" | jq -r '.id // empty' || true)"
           payload="$(jq -n --arg t "$TAG" --arg b "$notes" \
-            '{tag_name:$t, name:("python-codeforge " + $t), body:$b}')"
+            '{tag_name:$t, name:("__PROJECT_NAME__ " + $t), body:$b}')"
           if [ -n "$release_id" ]; then
             curl -sf -X PATCH \
               -H "Authorization: Bearer $TOKEN" \
@@ -116,7 +116,7 @@ jobs:
               -H "X-GitHub-Api-Version: 2022-11-28" \
               -H "Content-Type: application/json" -d "$payload" \
               "$api/releases/$release_id" > /dev/null
-            echo "updated python-codeforge $TAG on GitHub"
+            echo "updated __PROJECT_NAME__ $TAG on GitHub"
           else
             curl -sf -X POST \
               -H "Authorization: Bearer $TOKEN" \
@@ -124,5 +124,5 @@ jobs:
               -H "X-GitHub-Api-Version: 2022-11-28" \
               -H "Content-Type: application/json" -d "$payload" \
               "$api/releases" > /dev/null
-            echo "published python-codeforge $TAG on GitHub"
+            echo "published __PROJECT_NAME__ $TAG on GitHub"
           fi

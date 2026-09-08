@@ -58,7 +58,7 @@ exclude = [
 ]
 
 [tool.ruff]
-src = ["src", "tests", "automation"]
+src = ["src", "tests"]
 line-length = 100
 target-version = "py312"
 
@@ -68,7 +68,6 @@ ignore = ["COM812", "ISC001", "D203", "D213", "CPY001"]
 flake8-annotations = { mypy-init-return = true, suppress-none-returning = false }
 
 [tool.ruff.lint.per-file-ignores]
-"automation/ci/tasks/**" = ["T201"]
 "tests/**" = [
   "S101",
   "PLR2004",
@@ -90,8 +89,8 @@ convention = "google"
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src", "tests", "tasks.py", "automation", "vulture_whitelist.py"]
-mypy_path = ["src", ".", "automation"]
+files = ["src", "tests", "tasks.py", "vulture_whitelist.py"]
+mypy_path = ["src", "."]
 explicit_package_bases = true
 namespace_packages = true
 strict = true
@@ -113,7 +112,7 @@ module = ["radon.*"]
 ignore_missing_imports = true
 
 [tool.pyright]
-include = ["src", "tests", "tasks.py", "automation", "vulture_whitelist.py"]
+include = ["src", "tests", "tasks.py", "vulture_whitelist.py"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = "warning"
@@ -122,12 +121,11 @@ reportUnnecessaryTypeIgnoreComment = "error"
 
 [[tool.pyright.executionEnvironments]]
 root = "."
-extraPaths = ["src", "automation"]
+extraPaths = ["src"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-pythonpath = ["automation"]
 addopts = ["--strict-markers", "--strict-config", "-ra", "--import-mode=importlib"]
 markers = [
   "slow: long-running tests",
@@ -152,7 +150,7 @@ output = ".coverage.json"
 exclude_dirs = ["tests", ".venv", "build", "dist"]
 
 [tool.vulture]
-paths = ["src", "tests", "tasks.py", "automation", "vulture_whitelist.py"]
+paths = ["src", "tests", "tasks.py", "vulture_whitelist.py"]
 exclude = [".venv"]
 ignore_names = ["side_effect", "_"]
 min_confidence = 80
@@ -160,7 +158,11 @@ sort_by_size = true
 
 [tool.python-codeforge]
 packages = ["python_codeforge"]
-targets = ["src", "tests", "tasks.py", "automation", "vulture_whitelist.py"]
+targets = ["src", "tests", "tasks.py", "vulture_whitelist.py"]
+
+[tool.python-codeforge.release]
+github_repository = "jonjitsu/python-codeforge"
+python_version = "3.12"
 
 [tool.python-codeforge.quality]
 crap_limit = 10.0

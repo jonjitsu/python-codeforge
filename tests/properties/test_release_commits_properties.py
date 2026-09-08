@@ -1,10 +1,9 @@
-"""Commit-to-version mapping invariants."""
+"""Commit-to-version mapping invariants for reusable releases."""
 
 from hypothesis import given
 from hypothesis import strategies as st
 
-from ci import commits
-from ci.version import MAJOR, MINOR, PATCH
+from python_codeforge.release import MAJOR, MINOR, PATCH, commits
 
 PATCH_TYPE = st.sampled_from(sorted(commits.TYPES - {"feat"}))
 

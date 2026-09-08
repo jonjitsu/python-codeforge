@@ -1,9 +1,13 @@
-"""Infer a release bump from commits since the latest reachable tag."""
+"""Infer a release bump from local Git metadata.
+
+Git is called with a fixed executable and argument vector, never through a shell.
+"""
 
 import re
-import subprocess
+import subprocess  # nosec B404
+from pathlib import Path
 
-from ci.version import MAJOR, MINOR, PATCH
+from python_codeforge.release.version import MAJOR, MINOR, PATCH
 
 _HEADER = re.compile(r"\A(?P<type>[a-z]+)(?:\([^)]*\))?(?P<breaking>!)?: .")
 _BREAKING_TRAILER = re.compile(r"^BREAKING[ -]CHANGE:", re.MULTILINE)
@@ -41,11 +45,12 @@ def unconventional(messages: list[str]) -> list[str]:
     return [message.splitlines()[0] for message in messages if not _typed(message)]
 
 
-def since(ref: str | None) -> list[str]:
-    """Read every non-merge commit message after ``ref``."""
-    span = f"{ref}..HEAD" if ref else "HEAD"
-    output = subprocess.run(  # noqa: S603
+def since(root: Path, ref: str | None) -> list[str]:
+    """Read every non-merge commit message after ``ref`` in ``root``."""
+    span = f"refs/tags/{ref}..HEAD" if ref else "HEAD"
+    output = subprocess.run(  # noqa: S603  # nosec B603 B607
         ["git", "log", "--no-merges", "--format=%B%x00", span],  # noqa: S607
+        cwd=root,
         capture_output=True,
         text=True,
         check=True,
@@ -53,10 +58,11 @@ def since(ref: str | None) -> list[str]:
     return [chunk.strip() for chunk in output.split("\0") if chunk.strip()]
 
 
-def latest_tag() -> str | None:
-    """Return the most recent reachable tag, if one exists."""
-    found = subprocess.run(
+def latest_tag(root: Path) -> str | None:
+    """Return the most recent reachable tag in ``root``, if one exists."""
+    found = subprocess.run(  # nosec B603 B607
         ["git", "describe", "--tags", "--abbrev=0"],  # noqa: S607
+        cwd=root,
         capture_output=True,
         text=True,
         check=False,

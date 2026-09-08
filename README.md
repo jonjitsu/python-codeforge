@@ -5,23 +5,50 @@ Reusable, typed [Invoke](https://www.pyinvoke.org/) tasks for Python projects ma
 tests, per-package coverage, CRAP, maintainability, cognitive complexity, hygiene, security,
 environment, managed pre-commit-hook tasks, and portable agent configuration.
 
+## Quick start
+
+Add Codeforge to an existing `uv` project and get a green gate in four steps.
+
+1. Install it as a development dependency:
+
+   ```bash
+   uv add --group dev "python-codeforge @ git+https://github.com/jonjitsu/python-codeforge@1.0.0"
+   ```
+
+2. Create `tasks.py` at the repository root:
+
+   ```python
+   """Project automation."""
+
+   from python_codeforge import ns
+
+   __all__ = ["ns"]
+   ```
+
+3. Run the gate:
+
+   ```bash
+   uv run invoke check   # format, lint, types, dead code, tests, coverage, complexity
+   uv run invoke ci      # everything in check, plus security and dependency auditing
+   ```
+
+4. Optionally install the packaged automation:
+
+   ```bash
+   uv run invoke hooks.install       # managed pre-commit hooks
+   uv run invoke ai.install-config   # AGENTS.md, skills, and provider links
+   uv run invoke release.install     # Gitea-to-GitHub release workflows
+   ```
+
+`invoke --list` shows the full namespace. Defaults suit a conventional `src/<package>` layout with
+package-partitioned tests; everything below covers configuration, per-project tasks, and the
+release mechanism in detail.
+
 ## Use it in another project
 
-Add a released version from the public GitHub release mirror as a development dependency:
-
-```bash
-uv add --group dev "python-codeforge @ git+https://github.com/jonjitsu/python-codeforge@1.0.0"
-```
-
-Create `tasks.py` in the consuming project:
-
-```python
-"""Project automation."""
-
-from python_codeforge import ns
-
-__all__ = ["ns"]
-```
+The [quick start](#quick-start) covers installation and the minimal `tasks.py`; released versions
+come from the public GitHub release mirror. The rest of this section explains why that file is
+needed, how to add project-specific tasks, and which settings Codeforge reads.
 
 ### How Invoke discovers the tasks
 
@@ -136,7 +163,72 @@ invoke test.properties
 invoke security.all
 invoke hooks.install
 invoke ai.install-config
+invoke release.install
 ```
+
+### Standard Gitea-to-GitHub releases
+
+Codeforge can install the release mechanism used by this project into another repository. Gitea
+remains the development forge and owns pull requests, CI, tags, and the canonical release. GitHub
+receives only the exact tagged commit and matching release notes.
+
+Configure the public mirror and the Python version used by Actions:
+
+```toml
+[tool.python-codeforge.release]
+github_repository = "owner/repository"
+python_version = "3.12"
+```
+
+Then render the standard workflows into `.gitea/workflows`:
+
+```bash
+uv run invoke release.install
+```
+
+The installer manages `check.yaml`, `release-prepare.yaml`, `release-tag.yaml`, and
+`release-mirror.yaml`. It is idempotent, preserves unrelated workflows, and refuses to replace a
+differing managed file unless `--force` is passed. Commit the rendered workflows so releases do
+not depend on Codeforge being available before the job starts.
+
+Add `RELEASE_TOKEN` and `MIRROR_GITHUB_TOKEN` as Gitea repository Actions secrets. The release
+token needs permission to push `release/next` and tags, create pull requests and Gitea releases,
+and dispatch Actions; the mirror also uses it to verify the canonical Gitea release before the
+GitHub token enters scope. The mirror token needs permission to update the configured GitHub
+repository and its releases. Configure the Gitea repository to squash commits on merge and delete
+merged branches.
+
+Every merged change must use a Conventional Commit subject and add hand-written notes under
+`## Unreleased`. A merge to `master` refreshes a standing `release/next` pull request. Merging that
+pull request pins its exact merge commit, creates the Gitea tag and release, and only then dispatches
+the GitHub mirror. The mirror rejects tags without a matching canonical Gitea release. Nothing
+re-drives a failed mirror: the Gitea release stays canonical, and the retry is to run the
+`release-mirror` workflow by hand with the released tag. The tasks
+`release.prepare`, `release.version`, and `release.notes` are also available for local inspection.
+
+The installed workflows are written to fail loudly rather than release the wrong thing:
+
+- **The tagged commit is the reviewed commit.** `release-tag` checks out the pull request's
+  `merge_commit_sha` and then verifies that `HEAD` is that commit, so a push landing on `master`
+  during the release window cannot be tagged, and an empty or unexpected value stops the job
+  instead of silently falling back to the default branch.
+- **Only canonical releases reach GitHub.** `release-mirror` has no tag trigger. It runs on
+  dispatch, requires a `MAJOR.MINOR.PATCH` tag that already exists as a Gitea release, and
+  confirms the checked-out tree declares that same version before `MIRROR_GITHUB_TOKEN` enters
+  any step's scope. The dispatch input is bound through `env:` and never interpolated into shell
+  source.
+- **Release work is serialized.** `release-prepare`, `release-tag`, and `release-mirror` each hold
+  a concurrency group; the two publishing workflows do not cancel a run in progress.
+- **Credentials stay narrow.** Checkouts do not persist credentials, so `RELEASE_TOKEN` is absent
+  from `.git/config` while the quality gate runs; pushes bind the authorization header through
+  `GIT_CONFIG_*` environment variables rather than `git -c`, keeping the token out of the process
+  argument list.
+- **Failures are legible.** `release.prepare`, `release.version`, and `release.notes` report an
+  invalid `pyproject.toml` or `CHANGELOG.md` as a one-line error rather than a traceback.
+
+Gitea does not enforce GitHub's `permissions:` scoping, so the templates deliberately carry no
+permissions block and each records that in a comment; authorization comes from the tokens a step
+binds, and nothing else.
 
 ### Install agent configuration
 

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- The README now opens with a quick start and documents the safety properties of the
+  installed release workflows.
+- Added reusable semantic-version release tasks and installable Gitea workflow
+  templates so consumer projects can standardize Gitea development and publish
+  only reviewed releases to GitHub. Tagging pins the reviewed merge commit and
+  fails if the pinned commit is not what was checked out, mirroring rejects
+  unversioned tags and tags without a canonical Gitea release, pushes keep the
+  release token out of the process arguments, and the templates record that Gitea
+  does not enforce GitHub `permissions:` scoping.
 - Python 3.12 is now the minimum supported interpreter instead of Python 3.13.
 - Project and lockfile metadata now agree with the existing `1.0.0` release tag.
 - Gitea is now the canonical development forge. Gitea Actions runs checks,

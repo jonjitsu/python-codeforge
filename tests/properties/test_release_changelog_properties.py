@@ -1,10 +1,9 @@
-"""Changelog promotion invariants."""
+"""Changelog promotion invariants for reusable release automation."""
 
 from hypothesis import given
 from hypothesis import strategies as st
 
-from ci import changelog
-from ci.version import Version
+from python_codeforge.release import Version, changelog
 
 NOTE = st.lists(
     st.sampled_from(["Added checks.", "Fixed a failure.", "Improved release safety."]),
