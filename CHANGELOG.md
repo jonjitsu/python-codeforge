@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.0
+
 - Each GitHub release now includes an immutable `python_codeforge-<version>-py3-none-any.whl`
   asset built from the tagged commit, so consumers can depend on a hashed release-wheel URL
   instead of a Git dependency.
